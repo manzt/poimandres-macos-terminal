@@ -1,0 +1,47 @@
+name: Generate Themes
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  Run:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: target
+
+      - name: Checkout lysyi3m/macos-terminal-themes
+        uses: actions/checkout@v4
+        with:
+          repository: lysyi3m/macos-terminal-themes
+          sparse-checkout: tools
+          path: macos-terminal-themes
+
+      - name: Checkout alii/poimandres-terminal
+        uses: actions/checkout@v4
+        with:
+          repository: alii/poimandres-terminal
+          sparse-checkout: themes
+          path: poimandres-terminal
+
+      - name: Compile iterm2terminal
+        run: |
+          xcrun -sdk macosx swiftc macos-terminal-themes/tools/iterm2terminal.swift -o iterm2terminal
+
+      - name: Convert Themes
+        run: |
+          ./iterm2terminal poimandres-terminal/themes/*.itermcolors
+          mv poimandres-terminal/themes/*.terminal target/
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          path: target
+          commit-message: "Update themes"
+          title: "Update themes"
+          body: "Automated PR. Updates themes."
+          branch: "update-themes"
+          delete-branch: true
